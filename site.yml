@@ -1,0 +1,5 @@
+---
+# playbook for cloud deployment
+- hosts: localhost
+  roles:
+   - server

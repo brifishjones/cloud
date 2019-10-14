@@ -1,0 +1,14 @@
+[production]
+vultr-production
+dreamhost-production
+
+[staging]
+vultr-staging
+
+[dev]
+vultr-dev-1
+
+[vultr]
+vultr-production
+vultr-staging
+vultr-dev-1

@@ -1,0 +1,2 @@
+- include: vultr.yml
+  when: "'vultr' in group_names"
