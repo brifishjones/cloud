@@ -1,4 +1,4 @@
 - hosts: dev
   gather_facts: no
   roles:
-    - server
+    - ../roles/server

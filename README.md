@@ -19,7 +19,7 @@ After obtaining a Vultr API key test with Ansible to verify account connection:
 ```sh
 VULTR_API_KEY=7TLL77DG3HU6BCQ3BOHPF65HOICUQATCV6VQ ansible -m vultr_account_facts localhost
 ```
-The encrypted vultr.ini file contains an API key like the one shown above. You'll need the vault password stored on LastPass to deploy.
+The Ansible vault encrypted var 'vultr_api_key' contains an API key like the one shown above. You'll need the vault password stored on LastPass to deploy.
 
 Do a trial run of the server create process:
 ```sh
