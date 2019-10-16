@@ -1,0 +1,10 @@
+---
+# tasks file for apache
+
+- name: install apache2
+  apt:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - apache2
