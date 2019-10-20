@@ -1,0 +1,5 @@
+<VirtualHost *:80>
+    ServerName {{ ansible_host }} 
+    Redirect / https://{{ ansible_host }}/
+</VirtualHost>
+

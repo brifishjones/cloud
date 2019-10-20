@@ -1,0 +1,32 @@
+<IfModule mod_ssl.c>
+<VirtualHost *:433>
+  ServerAdmin www@{{ ansible_host }}
+  ServerName {{ ansible_host }} 
+  ServerAlias {{ ansible_host }}
+  DocumentRoot /var/www/{{ ansible_host }}
+  ErrorLog ${APACHE_LOG_DIR}/{{ ansible-host }}/error.log
+  CustomLog ${APACHE_LOG_DIR}/{{ ansible-host }}/access.log combined
+
+  <Directory /var/www>
+    Options FollowSymLinks
+    AllowOverride All
+    Order deny,allow
+    Allow from all
+  </Directory>
+
+  # Possible values include: debug, info, notice, warn, error, crit,
+  # alert, emerg.
+  LogLevel warn
+
+  SSLEngine on
+  SSLHonorCipherOrder On
+  SSLProtocol +all -SSLv2 -SSLv3
+  SSLCipherSuite "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256  EECDH EDH+aRSA !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS"
+  SSLInsecureRenegotiation off
+  SSLCertificateFile      /etc/apache2/ssl/{{ansible_host}}/Wildcard.crt
+  SSLCertificateKeyFile   /etc/apache2/ssl/{{ansible_host}}/wildcard.key
+  SSLCertificateChainFile /etc/apache2/ssl/{{ansible_host}}/gd_bundle-g2-g1.crt
+  SSLCACertificateFile    /etc/apache2/ssl/{{ansible_host}}/gd_bundle-g2-g1.crt
+
+</VirtualHost>
+</IfModule>

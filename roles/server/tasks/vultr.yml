@@ -1,18 +1,36 @@
 ---
 # tasks file for vultr
 
-- name: create server
+- name: Ensure that your ssh public key is present in the Vultr account
+  local_action:
+    module: vultr_ssh_key
+    api_key: "{{ vultr_api_key }}"
+    name: "{{ lookup('env','USER') }}"
+    ssh_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  tags: [create_server, never]
+
+- name: Create server
   local_action:
     module: vultr_server
     name: "{{ inventory_hostname_short }}"
     api_key: "{{ vultr_api_key }}"
+    ssh_key: "{{ lookup('env','USER') }}"
     os: Ubuntu 18.04 x64
     plan: 1024 MB RAM,25 GB SSD,1.00 TB BW
     region: Chicago
     state: present
   tags: [create_server, never]
+  register: vultr_server_info
 
-- name: destroy server
+- name: Update host inventory file with server ip address
+  local_action:
+    module: lineinfile
+    path: ../hosts 
+    regexp: "^{{ inventory_hostname_short }}"
+    line: "{{inventory_hostname_short }} ansible_host={{ vultr_server_info.vultr_server.v4_main_ip }}" 
+  tags: [create_server, never]
+
+- name: Destroy server
   local_action:
     module: vultr_server
     name: "{{ inventory_hostname_short }}"
@@ -20,7 +38,15 @@
     state: absent
   tags: [destroy_server, never]
 
-- name: ensure a server is present and started
+- name: Remove ip address of destroyed server from host inventory file
+  local_action:
+    module: lineinfile
+    path: ../hosts 
+    regexp: "^{{ inventory_hostname_short }}"
+    line: "{{inventory_hostname_short }}" 
+  tags: [destroy_server, never]
+
+- name: Ensure a server is present and started
   local_action:
     module: vultr_server
     name: "{{ inventory_hostname_short }}"

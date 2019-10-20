@@ -11,4 +11,4 @@ vultr-dev-1
 [vultr]
 vultr-production
 vultr-staging
-vultr-dev-1
+vultr-dev-1 ansible_host=45.76.29.194
