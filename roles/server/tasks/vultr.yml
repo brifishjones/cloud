@@ -29,6 +29,7 @@
     regexp: "^{{ inventory_hostname_short }}"
     line: "{{inventory_hostname_short }} ansible_host={{ vultr_server_info.vultr_server.v4_main_ip }}" 
   tags: [create_server, never]
+  when: vultr_server_info.vultr_server.v4_main_ip is defined
 
 - name: Destroy server
   local_action:

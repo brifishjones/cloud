@@ -1,5 +1,6 @@
 ---
 # tasks file for apache
+- debug: var=hostvars[inventory_hostname]['ansible_default_ipv4']['address']
 
 - name: install apache2
   apt:
@@ -8,3 +9,77 @@
   vars:
     packages:
       - apache2
+      - ssl-cert
+
+- name: Ensure document root directory exists
+  file:
+    path: /var/www/{{ ansible_host }}
+    state: directory
+
+- name: Ensure /etc/apache2/ssl directory exists
+  file:
+    path: /etc/apache2/ssl
+    state: directory
+
+- name: Ensure /var/log/apache2/{{ ansible_host }} directory exists
+  file:
+    path: /var/log/apache2/{{ ansible_host }}
+    state: directory
+
+- name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
+  openssl_privatekey:
+    path: /etc/apache2/ssl/{{ ansible_host }}.key
+
+- name: Generate an OpenSSL Certificate Signing Request
+  openssl_csr:
+    path: /etc/apache2/ssl/{{ ansible_host }}.csr
+    privatekey_path: /etc/apache2/ssl/{{ ansible_host }}.key
+    common_name: "{{ ansible_host }}" 
+
+- name: Generate a Self Signed OpenSSL certificate
+  openssl_certificate:
+    path: /etc/apache2/ssl/{{ ansible_host }}.pem
+    privatekey_path: /etc/apache2/ssl/{{ ansible_host }}.key 
+    csr_path: /etc/apache2/ssl/{{ ansible_host }}.csr
+    provider: selfsigned
+
+- name: Activate necessary modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - rewrite
+    - actions
+    - ssl
+  notify:
+    - restart apache
+
+- name: Deactivate default host
+  command: a2dissite 000-default
+  notify:
+    - restart apache
+
+- name: Deactivate default ssl host
+  command: a2dissite default-ssl
+  notify:
+    - restart apache
+
+- name: Setup host.conf for site
+  template:
+    src: host.conf.j2
+    dest: /etc/apache2/sites-available/{{ ansible_host }}.conf
+
+- name: Setup secure host-ssl.conf for site
+  template:
+    src: host-ssl.conf.j2
+    dest: /etc/apache2/sites-available/{{ ansible_host }}-ssl.conf
+
+- name: Activate new host
+  command: a2ensite {{ ansible_host }}
+  notify:
+    - restart apache
+
+- name: Activate new secure host
+  command: a2ensite {{ ansible_host }}-ssl
+  notify:
+    - restart apache
