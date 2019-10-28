@@ -6,3 +6,5 @@
   roles:
     - ../roles/apache
     - ../roles/php
+    - ../roles/apg
+    - ../roles/mysql
