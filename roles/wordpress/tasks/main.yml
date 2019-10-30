@@ -1,0 +1,141 @@
+---
+# tasks file for wordpress
+- name: Download and install latest WordPress
+  command: wp core download --path={{ wp_home_path }} --locale=en_US --version=latest
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Set WordPress permissions
+  file:
+    path: "{{ wp_home_path }}" 
+    owner: www-data
+    group: www-data
+    mode: 0755
+    recurse: yes
+    state: directory
+
+- name: Create database for WordPress
+  mysql_db:
+    name: wordpress
+    state: present
+    encoding: utf8mb4
+    collation: utf8mb4_unicode_ci
+
+- name: Generate random password for WordPress MySQL user
+  shell: apg -a 1 -n 1 -m 24 -x 24 -M NCL
+  register: wp_db_password
+# no_log: True
+
+- name: Create WordPress MySQL user
+  mysql_user:
+    name: wordpress
+    password: "{{ wp_db_password.stdout }}"
+    state: present
+    priv: "wordpress.*:ALL"
+    update_password: always
+
+- name: Generate wp-config.php
+  shell: wp config create --dbname=wordpress --dbuser=wordpress --dbpass={{ wp_db_password.stdout }} --dbcharset=utf8mb4 --dbcollate=utf8mb4_unicode_ci --locale=en_US --extra-php --force
+  become: true
+  become_method: sudo
+  become_user: www-data
+  args:
+    chdir: /var/www/{{ ansible_host }}
+    stdin: |
+      define( 'WP_DEBUG', true );
+      define( 'SAVEQUERIES', true );
+
+- name: Install WordPress in 5 seconds and create tables in the database
+# command: wp core install --url={{ ansible_host }} --title=WordPress{{ ansible_host}} --admin_user=admin --admin_password={{ wp_db_password.stdout }} --admin_email=info@example.com --path={{ wp_home_path }} 
+  command: wp core install --url={{ ansible_host }} --title=WordPress{{ ansible_host}} --admin_user=admin --admin_password={{ wp_db_password.stdout }} --admin_email=jonebr01@luther.edu --path={{ wp_home_path }} 
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install Elementor page builder plugin
+  command: wp plugin install elementor --path={{ wp_home_path }} --force --activate --activate-network
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install Advanced Custom Fields plugin
+  command: wp plugin install advanced-custom-fields --path={{ wp_home_path }} --force --activate --activate-network
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install Regenerate Thumbnails plugin
+  command: wp plugin install regenerate-thumbnails --path={{ wp_home_path }} --force --activate --activate-network
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install WPforms Lite plugin
+  command: wp plugin install wpforms-lite --path={{ wp_home_path }} --force --activate --activate-network
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install Wordfence Security plugin
+  command: wp plugin install wordfence --path={{ wp_home_path }} --force --activate --activate-network
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install Yoast SEO plugin
+  command: wp plugin install wordpress-seo --path={{ wp_home_path }} --force --activate --activate-network
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install the OceanWP theme
+  command: wp theme install oceanwp --path={{ wp_home_path }} --force --activate
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install Ocean Extra plugin
+  command: wp plugin install ocean-extra --path={{ wp_home_path }} --force --activate --activate-network
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install the OnePress theme
+  command: wp theme install onepress --path={{ wp_home_path }} --force
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Install the Neve theme
+  command: wp theme install neve --path={{ wp_home_path }} --force
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Make the permalink based on the blog post name
+  command: wp option update permalink_structure '/%postname%/' --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: copy htaccess file 
+  copy:
+    src: htaccess
+    dest: "{{ wp_home_path }}/.htaccess"
+    mode: 0775
+    owner: www-data
+    group: www-data

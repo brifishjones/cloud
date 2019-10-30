@@ -15,7 +15,7 @@
 - name: Generate random password for MySQL root user
   shell: apg -a 1 -n 1 -m 24 -x 24 -M NCL
   register: mysql_root_password
-  no_log: True
+# no_log: True
 
 - name: Setup MySQL root password
   mysql_user:
@@ -58,5 +58,22 @@
   copy:
     src: utf8.cnf
     dest: /etc/mysql/mysql.conf.d/utf8.cnf
+  notify:
+    - restart mysql
+
+- name: Allow other clients other than localhost to connect to database by commenting out bind-address 127.0.0.1
+  replace:
+    dest: /etc/mysql/mysql.conf.d/mysqld.cnf
+    regexp: '^bind-address'
+    replace: '# bind-address'
+  notify:
+    - restart mysql
+
+- name: Setup MySQL access to wordpress database from database application such as Sequel Pro running on local Mac
+  mysql_user:
+    name: "root"
+    host: "{{ ansible_hostname }}"
+    priv: "*.*:ALL"
+    state: present
   notify:
     - restart mysql

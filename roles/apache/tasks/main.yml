@@ -11,10 +11,21 @@
       - apache2
       - ssl-cert
 
+- name: Ensure /var/www directory exists and is owned by www-data
+  file:
+    path: /var/www
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+
 - name: Ensure document root directory exists
   file:
     path: /var/www/{{ ansible_host }}
     state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
 
 - name: Ensure /etc/apache2/ssl directory exists
   file:

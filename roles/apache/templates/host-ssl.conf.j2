@@ -17,8 +17,15 @@
     <FilesMatch "\.(cgi|shtml|phtml|php)$">
       SSLOptions +StdEnvVars
     </FilesMatch>
+
     <Directory /usr/lib/cgi-bin>
       SSLOptions +StdEnvVars
+    </Directory>
+
+    <Directory /var/www/{{ ansible_host }}>
+      Options -Indexes +FollowSymLinks +Multiviews
+      AllowOverride All
+      Require all granted
     </Directory>
 
   </VirtualHost>
