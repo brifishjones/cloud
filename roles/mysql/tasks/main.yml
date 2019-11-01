@@ -61,7 +61,7 @@
   notify:
     - restart mysql
 
-- name: Allow other clients other than localhost to connect to database by commenting out bind-address 127.0.0.1
+- name: Allow other clients other than localhost to connect to database by commenting out bind-address 127.0.0.1 - note potential security risk
   replace:
     dest: /etc/mysql/mysql.conf.d/mysqld.cnf
     regexp: '^bind-address'
@@ -69,11 +69,12 @@
   notify:
     - restart mysql
 
-- name: Setup MySQL access to wordpress database from database application such as Sequel Pro running on local Mac
+- name: Setup MySQL access to server database from database application such as Sequel Pro running on local computer
   mysql_user:
     name: "root"
-    host: "{{ ansible_hostname }}"
-    priv: "*.*:ALL"
+    password: "{{ mysql_root_password.stdout }}" 
+    host: "%"
+    priv: "*.*:ALL,GRANT"
     state: present
   notify:
     - restart mysql

@@ -15,7 +15,7 @@ Cloud service providers tested:
 
 * [Vultr](https://vultr.com/)
 
-After obtaining a Vultr API key test with Ansible to verify account connection:
+After obtaining a Vultr API key, and allowing subnet access (see https://my.vultr.com/settings/#settingsapi), test with Ansible to verify account connection:
 ```sh
 VULTR_API_KEY=7TLL77DG3HU6BCQ3BOHPF65HOICUQATCV6VQ ansible -m vultr_account_facts localhost
 ```
@@ -56,3 +56,19 @@ vultr_api_key: !vault |
           3439323263373739623564373362613436353262393139353261
 Encryption successful
 ```
+
+## Install Apache, MySQL, and PHP
+
+Once you've got an Ubuntu server functioning in the cloud install Apache, MySQL, and PHP
+```sh
+ansible-playbook playbooks/lamp.yml --inventory hosts -v --ask-vault-pass
+```
+Make note of the generated MySQL password.
+
+## Install Wordpress
+
+```sh
+ansible-playbook playbooks/wordpress.yml --inventory hosts -v --ask-vault-pass
+
+```
+Save the generated Wordpress admin password for wp-login access.
