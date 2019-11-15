@@ -1,4 +1,4 @@
-# Cloud: Setup Development Environments on several cloud virtual servers
+
   
 Automate the process of creating and provisioning cloud virtual machines with a complete, running instance of WordPress.
 
@@ -21,24 +21,24 @@ VULTR_API_KEY=7TLL77DG3HU6BCQ3BOHPF65HOICUQATCV6VQ ansible -m vultr_account_fact
 ```
 The Ansible vault encrypted var 'vultr_api_key' contains an API key like the one shown above. You'll need the vault password stored on LastPass to deploy.
 
-Do a trial run of the server create process:
+Do a trial run of the server create process for the vultr-dev-1 instance:
 ```sh
-ansible-playbook playbooks/server.yml --inventory hosts --tags create_server --check --diff -v --ask-vault-pass
+ansible-playbook playbooks/server.yml --inventory hosts --limit vultr-dev-1 --tags create_server --check --diff -v --ask-vault-pass
 ```
 
 Create a server (it takes about 5 minutes for a server to be created):
 ```sh
-ansible-playbook playbooks/server.yml --inventory hosts --tags create_server -v --ask-vault-pass 
+ansible-playbook playbooks/server.yml --inventory hosts --limit vultr-dev-1 --tags create_server -v --ask-vault-pass 
 ```
 
 See if the server is running:
 ```sh
-ansible-playbook playbooks/server.yml --inventory hosts -v --ask-vault-pass
+ansible-playbook playbooks/server.yml --inventory hosts --limit vultr-dev-1 -v --ask-vault-pass
 ```
 
-Destroy the server instance (all data is lost):
+Destroy the server instance when it is no longer needed. Note that **all data is lost** including applications and database content. The assigned IP address is also relinquished.
 ```sh
-ansible-playbook playbooks/server.yml --inventory hosts --tags destroy_server -v --ask-vault-pass
+ansible-playbook playbooks/server.yml --inventory hosts --limit vultr-dev-1 --tags destroy_server -v --ask-vault-pass
 ```
 
 It's possible to encrypt a variable, in this case the vultr_api_key and paste the result into a yml file:
@@ -61,14 +61,14 @@ Encryption successful
 
 Once you've got an Ubuntu server functioning in the cloud install Apache, MySQL, and PHP
 ```sh
-ansible-playbook playbooks/lamp.yml --inventory hosts -v --ask-vault-pass
+ansible-playbook playbooks/lamp.yml --inventory hosts --limit vultr-dev-1 -v --ask-vault-pass
 ```
 Make note of the generated MySQL password.
 
 ## Install Wordpress
 
 ```sh
-ansible-playbook playbooks/wordpress.yml --inventory hosts -v --ask-vault-pass
+ansible-playbook playbooks/wordpress.yml --inventory hosts --limit vultr-dev-1 -v --ask-vault-pass
 
 ```
 Save the generated Wordpress admin password for wp-login access.
