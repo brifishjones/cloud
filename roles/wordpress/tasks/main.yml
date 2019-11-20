@@ -97,6 +97,13 @@
   become_user: www-data
   ignore_errors: true
 
+- name: Install the Hello theme, which is used with the Elementor page builder
+  command: wp theme install hello-elementor --path={{ wp_home_path }} --force
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
 - name: Install the OceanWP theme
   command: wp theme install oceanwp --path={{ wp_home_path }} --force --activate
   become: true
