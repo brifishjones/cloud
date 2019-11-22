@@ -48,8 +48,8 @@
       define( 'SAVEQUERIES', true );
 
 - name: Install WordPress in 5 seconds and create tables in the database
-# command: wp core install --url={{ ansible_host }} --title=WordPress{{ ansible_host}} --admin_user=admin --admin_password={{ wp_db_password.stdout }} --admin_email=info@example.com --path={{ wp_home_path }} 
-  command: wp core install --url={{ ansible_host }} --title=WordPress{{ ansible_host}} --admin_user=admin --admin_password={{ wp_db_password.stdout }} --admin_email=jonebr01@luther.edu --path={{ wp_home_path }} 
+# command: wp core install --url={{ ansible_host }} --title=WordPress{{ ansible_host}} --admin_user=admin --admin_password={{ wp_db_password.stdout }} --admin_email=info@example.com --path={{ wp_home_path }}
+  command: wp core install --url={{ ansible_host }} --title=WordPress {{ ansible_host}} --admin_user=admin --admin_password={{ wp_db_password.stdout }} --admin_email=jonebr01@luther.edu --path={{ wp_home_path }}
   become: true
   become_method: sudo
   become_user: www-data
@@ -134,6 +134,20 @@
 
 - name: Make the permalink based on the blog post name
   command: wp option update permalink_structure '/%postname%/' --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Update the home url
+  command: wp option update home 'https://{{ ansible_host}}' --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Update the site url
+  command: wp option update siteurl 'https://{{ ansible_host}}' --path={{ wp_home_path }}
   become: true
   become_method: sudo
   become_user: www-data
