@@ -15,11 +15,13 @@ Cloud service providers tested:
 
 * [Vultr](https://vultr.com/)
 
+Be certain that you have both public and private ssh rsa keys present in your home directory (~/.ssh/id_rsa, ~/.ssh/id_rsa.pub)
+
 After obtaining a Vultr API key, and allowing subnet access (see https://my.vultr.com/settings/#settingsapi), test with Ansible to verify account connection:
 ```sh
 VULTR_API_KEY=7TLL77DG3HU6BCQ3BOHPF65HOICUQATCV6VQ ansible -m vultr_account_facts localhost
 ```
-The Ansible vault encrypted var 'vultr_api_key' contains an API key like the one shown above. You'll need the vault password stored on LastPass to deploy.
+The Ansible vault encrypted var 'vultr_api_key' contains an API key like the one shown above. You'll need to know the vault password stored on LastPass to deploy.
 
 Do a trial run of the server create process for the vultr-dev-1 instance:
 ```sh
