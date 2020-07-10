@@ -1,4 +1,3 @@
 ---
 # vars file for wordpress
 wp_home_path: "/var/www/{{ ansible_host }}"
-
