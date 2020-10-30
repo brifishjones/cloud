@@ -1,14 +1,9 @@
 [production]
-vultr-production
-dreamhost-production
+fish
 
 [staging]
-vultr-staging
 
 [dev]
-vultr-dev-1
 
 [vultr]
-vultr-production
-vultr-staging
-vultr-dev-1 ansible_host=149.28.126.214
+fish ansible_host=137.220.57.211
