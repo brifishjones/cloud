@@ -1,0 +1,33 @@
+<IfModule mod_ssl.c>
+  <VirtualHost *:443>
+    ServerName {{ wp_domain }}
+    ServerAdmin {{ wp_admin_email }}
+
+    DocumentRoot /var/www/{{ wordpress_site }}
+
+    LogLevel warn
+
+    ErrorLog ${APACHE_LOG_DIR}/{{ wordpress_site }}/error.log
+    CustomLog ${APACHE_LOG_DIR}/{{ wordpress_site }}/access.log combined
+
+    SSLEngine on
+
+    SSLCertificateFile /etc/apache2/ssl/{{ ansible_host }}.pem
+    SSLCertificateKeyFile /etc/apache2/ssl/{{ ansible_host }}.key
+
+    <FilesMatch "\.(cgi|shtml|phtml|php)$">
+      SSLOptions +StdEnvVars
+    </FilesMatch>
+
+    <Directory /usr/lib/cgi-bin>
+      SSLOptions +StdEnvVars
+    </Directory>
+
+    <Directory /var/www/{{ wordpress_site }}>
+      Options -Indexes +FollowSymLinks +Multiviews
+      AllowOverride All
+      Require all granted
+    </Directory>
+
+  </VirtualHost>
+</IfModule>

@@ -1,2 +1,4 @@
 ---
 # handlers file for wordpress
+- include: ../../apache/handlers/main.yml
+

@@ -1,3 +1,56 @@
 ---
 # vars file for wordpress
-wp_home_path: "/var/www/{{ ansible_host }}"
+# wp_home_path: "/var/www/{{ ansible_host }}"
+
+wordpress_sites:
+  mysticsundog:
+    domain: mystic-sundog.com
+    db_prefix: mys
+    admin_email: jenfishjones@gmail.com
+    title: Mystic Sundog
+    plugins: 
+      - advanced-custom-fields
+      - advanced-gutenberg-blocks
+      - atomic-blocks
+      - custom-color-palette
+      - ecwid-shopping-cart
+      - editor-blocks
+      - kadence-blocks
+      - otter-blocks
+      - regenerate-thumbnails
+      - ultimate-addons-for-gutenberg
+      - wpforms-lite
+      - wordfence
+      - wordpress-seo
+    themes: 
+      - astra
+  sundog:
+    domain: sundog-studios.com
+    db_prefix: sds
+    admin_email: jenfishjones@gmail.com
+    title: Sundog Studios
+    plugins: 
+      - advanced-custom-fields
+      - advanced-gutenberg-blocks
+      - atomic-blocks
+#      - block-builder
+      - custom-color-palette
+      - ecwid-shopping-cart
+      - editor-blocks
+#      - elementor
+      - kadence-blocks
+      - otter-blocks
+      - regenerate-thumbnails
+      - stackable-ultimate-gutenberg-blocks
+      - ultimate-addons-for-gutenberg
+      - wpforms-lite
+      - wordfence
+      - wordpress-seo
+    themes: 
+      - astra
+      - hello-elementor
+  jenfishjones:
+#    domain: jenfishjones.com
+    db_prefix: jfj
+    admin_email: jenfishjones@gmail.com
+    title: "jenfishjones.com"
