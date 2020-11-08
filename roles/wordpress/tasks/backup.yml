@@ -1,53 +1,56 @@
 ---
 # tasks file for wordpress site backup
-- name: Export the WordPress database to wp{{ ansible_host }}.sql
-  command: wp db export {{ backup_path }}wp{{ ansible_host }}.sql --path={{ wp_home_path }}
+- include: pre.yml
+
+- name: Ensure wp{{ inventory_hostname }} directory exists for backup files
+  file:
+    path: "{{ backup_path }}wp{{ inventory_hostname }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+
+- name: Export the WordPress database to wp{{ inventory_hostname }}/{{ wordpress_site }}.sql
+  command: wp db export {{ backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql --path={{ wp_home_path }}
   become: true
   become_method: sudo
   become_user: www-data
   ignore_errors: true
   tags: backup
 
-- name: Archive the WordPress site {{ ansible_host }}
-  archive:
-    path: "{{ wp_home_path }}"
-    dest: "{{ backup_path }}wp{{ ansible_host }}.tgz"
-  become: true
-  become_method: sudo
-  become_user: www-data
-  ignore_errors: true
-  tags: backup
+- name: Ensure {{ local_backup_path }}wp{{ inventory_hostname }} directory exists on local workstation to accept backup from remote
+  local_action:
+    module: file
+    path: "{{ local_backup_path }}wp{{ inventory_hostname }}" 
+    state: directory
+  become: false
 
-- name: Copy database backup from remote server to local computer {{local_backup_path}}wp{{ ansible_host }}.sql
-  fetch:
-    src: "{{ backup_path }}wp{{ ansible_host }}.sql"
-    dest: "{{ local_backup_path }}"
-    flat: yes
-  ignore_errors: true
-  tags: backup_fetch_from_remote
-
-- name: Rsync archived site from remote server to local computer {{ local_backup_path }}wp{{ ansible_host }}.tgz
-  #fetch:
-  #  src: "{{ backup_path }}wp{{ ansible_host }}.tgz"
-  #  dest: "{{ local_backup_path }}"
-  #  flat: yes
-  #ignore_errors: true
-  #local_action: command scp root@{{ansible_host }}:{{ backup_path }}wp{{ ansible_host }}.tgz {{local_backup_path }}
+- name: Copy (rsync) database backup from remote server to local computer {{ local_backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql
   synchronize:
     mode: pull
-    src: /var/www/{{ ansible_host }}
-    dest: /var/tmp
+    src: "{{ backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql"
+    dest: "{{ local_backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql"
   ignore_errors: true
   tags: backup_fetch_from_remote
 
-- name: Copy database backup from local computer to remote server {{backup_path}}wp{{ ansible_host }}.sql
+- name: Rsync archived site from remote server to local computer {{ local_backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}
+  synchronize:
+    mode: pull
+    src: "{{ wp_home_path }}"
+    dest: "{{ local_backup_path }}wp{{ inventory_hostname }}"
+    delete: yes
+  ignore_errors: true
+  tags: backup_fetch_from_remote
+
+- name: Copy database backup from local computer to remote server {{backup_path}}wp{{ inventory_hostname }}.sql
   copy:
-    src: "{{ local_backup_path }}wp{{ ansible_host }}.sql"
+    src: "{{ local_backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql"
     dest: "{{ backup_path }}"
   ignore_errors: true
   tags: [backup_copy_to_remote, never]
+  when: backup_from_host is defined
 
-- name: Copy database backup from another host {{ backup_from_host }} to remote server {{backup_path}}wp{{ ansible_host }}.sql
+- name: Copy (rsync) database backup from another host {{ backup_from_host }} to remote server {{backup_path}}wp{{ inventory_hostname }}.sql
   copy:
     src: "{{ local_backup_path }}wp{{ backup_from_host }}.sql"
     dest: "{{ backup_path }}"
@@ -55,16 +58,16 @@
   tags: [backup_copy_to_remote, never]
   when: backup_from_host is defined
 
-- name: Rsync archived site from local computer to remote_server {{ backup_path }}wp{{ ansible_host }}.tgz
+- name: Rsync archived site from local computer to remote_server {{ backup_path }}wp{{ inventory_hostname }}.tgz
   synchronize:
     mode: push
-    src: /var/tmp/{{ ansible_host }}
+    src: /var/tmp/{{ inventory_hostname }}
     dest: /var/www
   ignore_errors: true
   tags: [backup_copy_to_remote, never]
 
-- name: Import the WordPress database from wp{{ ansible_host }}.sql backup
-  command: wp db import {{ backup_path }}wp{{ ansible_host }}.sql --path={{ wp_home_path }}
+- name: Import the WordPress database from wp{{ inventory_hostname }}.sql backup
+  command: wp db import {{ backup_path }}wp{{ inventory_hostname }}.sql --path={{ wp_home_path }}
   become: true
   become_method: sudo
   become_user: www-data

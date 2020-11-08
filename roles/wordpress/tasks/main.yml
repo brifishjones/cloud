@@ -1,25 +1,6 @@
 ---
 # tasks file for wordpress
-- name: make sure that a Wordpress Site has been defined with the extra-vars wordpress_site otherwise exit play
-  fail: msg="no Wordpress Site has been defined with the flag extra-vars 'wordpress_site='."
-  when: wordpress_site is not defined
-
-- name: the wordpress_site must be defined in the /wordpress/vars directory
-  set_fact:
-    wp_home_path: "/var/www/{{ wordpress_site }}"
-    wp_domain: "{{ item.value.domain | default(ansible_host + '/' + wordpress_site) }}"
-    wp_title: "{{ item.value.title | default(wordpress_site) }}"
-    wp_db_name: "{{ wordpress_site }}"
-    wp_db_prefix: "{{ item.value.db_prefix | default(wordpress_site[:3]) }}_"
-    wp_admin_email: "{{ item.value.admin_email | default('info@example.com') }}"
-    wp_plugins: "{{ item.value.plugins | default([]) }}"
-    wp_themes: "{{ item.value.themes | default([]) }}"
-  loop: "{{ lookup('dict', wordpress_sites) }}"
-  when: wordpress_site in item.key
-
-- name: confirm that the Wordpress Site was found in wordpress/vars otherwise exit play
-  fail: msg="Wordpress Site {{ wordpress_site }} was not defined in wordpress/vars."
-  when: wp_home_path is not defined
+-include: pre.yml
 
 - name: Ensure WordPress {{ wp_home_path }} directory exists
   file:
@@ -170,7 +151,7 @@
     - restart apache
 
 - name: Create and install letsencrypt SSL certificate for apache using certbot
-  command: "certbot --apache -d  {{ wp_domain }} -m {{ wp_admin_email }} --agree-tos --noninteractive --redirect"
+  command: "certbot --apache -d {{ wp_domain }} -m {{ wp_admin_email }} --agree-tos --noninteractive --redirect"
   when: "not '/' in wp_domain"
   notify:
     - restart apache
