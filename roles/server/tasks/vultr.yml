@@ -15,9 +15,9 @@
     name: "{{ inventory_hostname_short }}"
     api_key: "{{ vultr_api_key }}"
     ssh_key: "{{ lookup('env','USER') }}"
-    os: Ubuntu 18.04 x64
+    os: Ubuntu 22.04 x64
     plan: 1024 MB RAM,25 GB SSD,1.00 TB BW
-    region: Chicago
+    region: Dallas
     state: present
   tags: [create_server, never]
   register: vultr_server_info
