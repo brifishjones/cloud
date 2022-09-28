@@ -67,10 +67,92 @@ ansible-playbook playbooks/lamp.yml --inventory hosts --limit vultr-dev-1 -v --a
 ```
 Make note of the generated MySQL password.
 
-## Install Wordpress
+## Install a Wordpress site
 
 ```sh
-ansible-playbook playbooks/wordpress.yml --inventory hosts --limit vultr-dev-1 -v --ask-vault-pass
-
+ansible-playbook playbooks/wordpress.yml --inventory hosts --limit vultr-dev-1 -v --extra-vars wordpress_site=sundogdev --ask-vault-pass
 ```
-Save the generated Wordpress admin password for wp-login access.
+
+In the above example the Wordpress playbook installs a specified Wordpress site (sundogdev) on the host vultr-dev-1. The site parameters must be defined in the roles/wordpress/vars/main.yml file for the playbook to run successfully.
+```sh
+  sundogdev:
+    domain: dev.sundog-studios.com
+    db_prefix: sds
+    admin_email: info@example.com
+    title: Sundog Studios
+    plugins:
+      - advanced-custom-fields
+      - advanced-gutenberg-blocks
+      - atomic-blocks
+      - editor-blocks
+      - kadence-blocks
+      - regenerate-thumbnails
+      - ultimate-addons-for-gutenberg
+      - wpforms-lite
+      - wordfence
+      - wordpress-seo
+    themes:
+      - astra
+```
+
+The Wordpress playbook
+* installs wp-cli
+* creates the mysql database for the site
+* installs Wordpress and its specified themes and plugins
+* creates the http config files
+* if a domain is specified gets SSL certificate from certificate authority using Let's Encrypt
+
+When the playbook completes be sure to save the generated Wordpress admin password for wp-login access.
+
+## Backup a Wordpress site from server to local workstation's /var/tmp/wpfish/backup directory
+
+```sh
+ansible-playbook playbooks/wordpress-backup.yml --inventory hosts --limit fish -v --extra-vars wordpress_site=sundog
+```
+
+## Restore a Wordpress site from local backup to server 
+
+```sh
+ansible-playbook playbooks/wordpress-restore.yml --inventory hosts --limit fish -v --extra-vars "wordpress_site=sundogdev from_wordpress_site=sundog"
+```
+
+The sundog site must exist and have been backed up to /var/tmp/wpfish/backup/sundog on the local workstation before a restore can be performed. The sundogdev site must also exist prior to a restore.
+
+## Rollback a Wordpress site immediately after a restore was performed
+
+```sh
+ansible-playbook playbooks/wordpress-rollback.yml --inventory hosts --limit fish -v --extra-vars wordpress_site=sundogdev
+```
+
+If the sundogdev site restore from the sundog backup didn't give the desired results, rollback to the way sundogdev was before the restore using the /var/tmp/wpfish/backup/sundogdev directory and /var/tmp/wpfish/backup/sundogdev.sql database
+
+## Import an older Wordpress site from another server that was originally not in this Ansible playbook 
+* Obtain backups of both the Wordpress files and database export (.sql file) for the site.
+* Add the site to roles/wordpress/vars/main.yml 
+* Rename the directory containing the Wordpress files and the database.sql file to match the site name added to roles/wordpress/vars/main.yml
+* Put the renamed directory and sql file into the local import directory
+* Before creating the new Wordpress site, at your domain hosting service change the DNS & Nameservers to point the new server (e.g. ns1.vultr.com and ns2.vultr.com)
+* In your Vultr account add a new DNS entry for the new site (e.g. dev.sundog.com)
+* Create the new Wordpress site
+* Import the old Wordpress site to the new Wordpress site that you just created
+
+```sh
+  sundogOLD:
+    domain: sundog.com
+    db_prefix: sds 
+    admin_email: admin@example.com
+    title: "Sundog Studios"
+```
+
+```sh
+mv sundog /var/tmp/import/sundogOLD
+mv sundog_production.sql /var/tmp/import/sundogOLD.sql
+```
+
+```sh
+ansible-playbook playbooks/wordpress.yml --inventory hosts --limit fish -v --extra-vars wordpress_site=sundogdev --ask-vault-pass
+```
+
+```sh
+ansible-playbook playbooks/wordpress-import.yml --inventory hosts --limit fish -v --extra-vars "wordpress_site=sundogdev from_wordpress_site=sundogOLD"
+```

@@ -1,6 +1,6 @@
 ---
 # tasks file for wordpress
--include: pre.yml
+- include: pre.yml
 
 - name: Ensure WordPress {{ wp_home_path }} directory exists
   file:
@@ -111,7 +111,7 @@
     owner: www-data
     group: www-data
 
-- name: If no domain defined link create link from {{ ansible_host }}/{{ wordpress_site }} to {{ wp_home_path }}
+- name: If no domain defined create link from {{ ansible_host }}/{{ wordpress_site }} to {{ wp_home_path }}
   file:
     src: "{{ wp_home_path }}"
     dest: "/var/www/{{ ansible_host }}/{{ wordpress_site }}"

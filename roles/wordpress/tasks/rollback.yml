@@ -1,0 +1,64 @@
+---
+# tasks file to rollback a wordpress site after a restore to the previously backed up state 
+#
+# There must be a backup of the database and wordpress site that was created on your remote workstation
+# during the restore playbook.
+- include: pre.yml
+
+- name: be certain that the wordpress site {{ wordpress_site }} has been initially installed on {{ inventory_hostname }}
+  stat:
+    path: "{{ wp_home_path }}"
+  register: p
+
+- name: confirm that the Wordpress Site was found in {{ wp_home_path }} otherwise exit play
+  fail: msg="The Wordpress site {{ wordpress_site }} must first be installed on {{ inventory_hostname }} before a rollback from a previous restore can occur. Please run the 'wordpress' playbook"
+  when: p.stat.isdir is not defined
+
+- name: be certain that the Wordpress site {{ wordpress_site }} has been backed up on {{ inventory_hostname }}
+  stat:
+    path: "{{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}"
+  register: bu
+
+- name: confirm that the Wordpress Site backup {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }} was found otherwise exit play
+  fail: msg="The {{ wordpress_site }} backup was not found in {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}"
+  when: bu.stat.isdir is not defined
+
+- name: be certain that the Wordpress database {{ wordpress_site }}.sql has been backed up on {{ inventory_hostname }}
+  stat:
+    path: "{{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql"
+  register: db 
+
+- name: confirm that the Wordpress Site database {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql was found otherwise exit play
+  fail: msg="The {{ wordpress_site }}.sql database backup was not found in {{ backup_path }}wp{{ inventory_hostname }}/backup"
+  when: not db.stat.exists
+
+- name: Before rolling back drop the restored WordPress database {{ wordpress_site }}
+  command: wp db reset --yes --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Import the WordPress database from wp{{ inventory_hostname }}/backkup/{{ wordpress_site }}.sql 
+  command: wp db import {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Remove the restored wordpress site {{ wp_home_path }} 
+  file:
+    state: absent
+    path: "{{ wp_home_path }}"
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Rollback {{ wordpress_site }} site. Rsync {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }} site to {{ wp_home_path }} 
+  synchronize:
+    src: "{{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}/"
+    dest: "{{ wp_home_path }}"
+    delete: yes
+  ignore_errors: true
+  delegate_to: "{{ inventory_hostname }}"

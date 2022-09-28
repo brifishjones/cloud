@@ -1,0 +1,63 @@
+---
+# tasks file for sed
+- include: pre.yml
+
+- name: the from_wordpress_site must be defined in the /wordpress/vars directory
+  set_fact:
+    wp_from_home_path: "/var/www/{{ from_wordpress_site }}"
+    wp_from_domain: "{{ item.value.domain | default(ansible_host + '/' + from_wordpress_site) }}"
+    wp_from_title: "{{ item.value.title | default(from_wordpress_site) }}"
+    wp_from_db_name: "{{ from_wordpress_site }}"
+    wp_from_db_prefix: "{{ item.value.db_prefix | default(from_wordpress_site[:3]) }}_"
+    wp_from_admin_email: "{{ item.value.admin_email | default('info@example.com') }}"
+  loop: "{{ lookup('dict', wordpress_sites) }}"
+  when: from_wordpress_site in item.key
+  tags: always
+
+#- name: search and replace using sed in directory
+#  shell:  find /var/tmp/sr -type f -print0 | xargs -0 sed -i 's/\b{{ wp_from_domain }}\b/{{ wp_domain }}/g'
+#  become: true
+#  become_method: sudo
+#  become_user: www-data
+#  ignore_errors: true
+
+- name: Rsync archived site {{ from_wordpress_site }} from local computer to remote server {{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }}
+  synchronize:
+    mode: push
+    src: "{{ local_backup_path }}wp{{ from_host }}/backup/{{ from_wordpress_site }}/"
+    dest: "{{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }}"
+    delete: yes
+  ignore_errors: true
+
+- name: Remove the existing wordpress site {{ wp_home_path }}
+  file:
+    state: absent
+    path: "{{ wp_home_path }}"
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Restore backed up site. Rsync {{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }} site to {{ wp_home_path }}
+  synchronize:
+    src: "{{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }}/"
+    dest: "{{ wp_home_path }}"
+    delete: yes
+  ignore_errors: true
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: change owner and group of {{ wp_home_path }} to www-data
+  file:
+    path: "{{ wp_home_path }}"
+    owner: www-data
+    group: www-data
+    recurse: yes
+
+- name: search files for {{ wp_from_domain }} and replace with {{ wp_domain }}
+  shell:  find {{ wp_home_path }} -type f -print0 | xargs -0 sed -i 's/\b{{ wp_from_domain }}\b/{{ wp_domain }}/g'
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+

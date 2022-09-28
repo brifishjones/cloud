@@ -1,0 +1,10 @@
+- hosts: all
+  user: root
+  become: yes
+  vars:
+    backup_path: /var/tmp/
+    local_backup_path: /var/tmp/
+  tasks:
+    - import_role:
+        name: ../roles/wordpress
+        tasks_from: sed 

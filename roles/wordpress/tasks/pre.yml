@@ -16,7 +16,7 @@
     wp_plugins: "{{ item.value.plugins | default([]) }}"
     wp_themes: "{{ item.value.themes | default([]) }}"
   loop: "{{ lookup('dict', wordpress_sites) }}"
-  when: wordpress_site in item.key
+  when: wordpress_site == item.key
   tags: always
 
 - name: confirm that the Wordpress Site was found in wordpress/vars otherwise exit play

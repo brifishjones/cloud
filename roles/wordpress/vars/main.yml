@@ -10,11 +10,8 @@ wordpress_sites:
     title: Mystic Sundog
     plugins: 
       - advanced-custom-fields
-      - advanced-gutenberg-blocks
-      - atomic-blocks
       - custom-color-palette
       - ecwid-shopping-cart
-      - editor-blocks
       - kadence-blocks
       - otter-blocks
       - regenerate-thumbnails
@@ -31,12 +28,8 @@ wordpress_sites:
     title: Sundog Studios
     plugins: 
       - advanced-custom-fields
-      - advanced-gutenberg-blocks
-      - atomic-blocks
-#      - block-builder
       - custom-color-palette
       - ecwid-shopping-cart
-      - editor-blocks
 #      - elementor
       - kadence-blocks
       - otter-blocks
@@ -49,8 +42,56 @@ wordpress_sites:
     themes: 
       - astra
       - hello-elementor
+  bigdogslargestories:
+    domain: big-dogs-large-stories.com
+    db_prefix: bdls
+    admin_email: jenfishjones@gmail.com
+    title: "Big Dogs Large Stories"
+  bigdogslargestoriesRP:
+    domain: big-dogs-large-stories.com
+    db_prefix: bdls
+    admin_email: jenfishjones@gmail.com
+    title: "Big Dogs Large Stories"
+  brifishjones:
+    domain: brifishjones.com
+    db_prefix: bfj
+    admin_email: brifishjones@gmail.com
+    title: "brifishjones.com"
+  brifishjonesRP:
+    domain: brifishjones.com
+    db_prefix: bfj
+    admin_email: brifishjones@gmail.com
+    title: "brifishjones.com"
   jenfishjones:
-#    domain: jenfishjones.com
+    domain: jenfishjones.com
     db_prefix: jfj
     admin_email: jenfishjones@gmail.com
     title: "jenfishjones.com"
+  jenfishjonesRP:
+    domain: jenfishjones.com
+    db_prefix: jfj
+    admin_email: jenfishjones@gmail.com
+    title: "jenfishjones.com"
+  adamfishjones:
+    domain: adamfishjones.com
+    db_prefix: afj 
+    admin_email: adamfishjones@gmail.com
+    title: adamfishjones.com
+    plugins:
+      - advanced-custom-fields
+      - custom-color-palette
+      - ecwid-shopping-cart
+      - kadence-blocks
+      - otter-blocks
+      - regenerate-thumbnails
+      - ultimate-addons-for-gutenberg
+      - wpforms-lite
+      - wordfence
+      - wordpress-seo
+    themes:
+      - astra
+  sundogdev:
+    domain: dev.sundog-studios.com
+    db_prefix: sdx
+    admin_email: jenfishjones@gmail.com
+    title: Sundog Studios

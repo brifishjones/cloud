@@ -1,0 +1,157 @@
+---
+# tasks file to restore a wordpress site from a specified host to the current inventory hostname and wordpress site
+#
+# There must be a backup of the database and wordpress site already present on your local workstation before restore
+# can be run.
+- include: pre.yml
+
+- name: be certain that the wordpress site {{ wordpress_site }} has been initially installed on {{ inventory_hostname }}
+  stat:
+    path: "{{ wp_home_path }}"
+  register: p
+
+- name: confirm that the Wordpress Site was found in {{ wp_home_path }} otherwise exit play
+  fail: msg="The Wordpress site {{ wordpress_site }} must first be installed on {{ inventory_hostname }} before a restore from backup can occur. Please run the 'wordpress' playbook"
+  when: p.stat.isdir is not defined
+
+- name: make sure that the backed up Wordpress Site has been defined with the extra-vars from_wordpress_site otherwise exit play
+  fail: msg="The backed up Wordpress site has not been defined with the flag extra-vars 'from_wordpress_site='."
+  when: from_wordpress_site is not defined
+  tags: always
+
+- name: make sure that the backup host with the {{ from_wordpress_site }} site has been defined with the extra-vars from_host otherwise assume that the backup host is the same as the current inventory hostname 
+  set_fact:
+    from_host: "{{ inventory_hostname }}"
+  when: from_host is not defined
+  tags: always
+
+- name: the from_wordpress_site must be defined in the /wordpress/vars directory
+  set_fact:
+    wp_from_home_path: "/var/www/{{ from_wordpress_site }}"
+    wp_from_domain: "{{ item.value.domain | default(ansible_host + '/' + from_wordpress_site) }}"
+    wp_from_title: "{{ item.value.title | default(from_wordpress_site) }}"
+    wp_from_db_name: "{{ from_wordpress_site }}"
+    wp_from_db_prefix: "{{ item.value.db_prefix | default(from_wordpress_site[:3]) }}_"
+    wp_from_admin_email: "{{ item.value.admin_email | default('info@example.com') }}"
+  loop: "{{ lookup('dict', wordpress_sites) }}"
+  when: from_wordpress_site == item.key
+  tags: always
+
+- name: confirm that the From Wordpress Site was found in wordpress/vars otherwise exit play
+  fail: msg="From Wordpress Site {{ from_wordpress_site }} was not defined in wordpress/vars."
+  when: wp_from_home_path is not defined
+  tags: always
+
+- name: Ensure {{ backup_path }}wp{{ inventory_hostname }}/restore directory exists to hold restored files
+  file:
+    path: "{{ backup_path }}wp{{ inventory_hostname }}/restore"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+
+- name: Copy (rsync) database backup {{ from_wordpress_site }}.sql from local computer to remote server {{ backup_path }}wp{{ inventory_hostname }}/restore/{{ wordpress_site }}.sql
+  synchronize:
+    mode: push
+    src: "{{ local_backup_path }}wp{{ from_host }}/backup/{{ from_wordpress_site }}.sql"
+    dest: "{{ backup_path }}wp{{ inventory_hostname }}/restore/{{ wordpress_site }}.sql"
+  ignore_errors: true
+
+- name: search {{ wordpress_site }}.sql for {{ wp_from_db_prefix }} and replace with {{ wp_db_prefix }}
+  shell:  find {{ backup_path }}wp{{ inventory_hostname }}/restore -name {{ wordpress_site }}.sql -print0 | xargs -0 sed -i 's/\b{{ wp_from_db_prefix }}/{{ wp_db_prefix }}/g'
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+  when: wp_from_db_prefix != wp_db_prefix
+
+- name: Rsync archived site {{ from_wordpress_site }} from local computer to remote server {{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }}
+  synchronize:
+    mode: push
+    src: "{{ local_backup_path }}wp{{ from_host }}/backup/{{ from_wordpress_site }}/"
+    dest: "{{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }}"
+    delete: yes
+  ignore_errors: true
+
+- name: since the rsync flag chown is not working change owner and group of {{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }} to www-data
+  file:
+    path: "{{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }}"
+    owner: www-data
+    group: www-data
+    recurse: yes
+
+- name: Ensure {{ backup_path }}wp{{ inventory_hostname }}/backup directory exists to hold backup of existing {{ wordpress_site }} before restore is done
+  file:
+    path: "{{ backup_path }}wp{{ inventory_hostname }}/backup"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+
+- name: Export the existing WordPress database to wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql before restore
+  command: wp db export {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Rsync {{ wordpress_site }} site to {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }} before restore
+  synchronize:
+    src: "{{ wp_home_path }}"
+    dest: "{{ backup_path }}wp{{ inventory_hostname }}/backup"
+    delete: yes
+  ignore_errors: true
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Before importing drop the WordPress database {{ wordpress_site }}
+  command: wp db reset --yes --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Import the WordPress database from wp{{ inventory_hostname }}/restore/{{ wordpress_site }}.sql backup
+  command: wp db import {{ backup_path }}wp{{ inventory_hostname }}/restore/{{ wordpress_site }}.sql --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Search for {{ wp_from_domain }} in the database and replace with {{ wp_domain }}
+  command: wp search-replace {{ wp_from_domain }} {{ wp_domain }} --skip-columns=guid --path={{ wp_home_path }}
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+  when: wp_from_domain != wp_domain
+
+- name: Remove the existing wordpress site {{ wp_home_path }} 
+  file:
+    state: absent
+    path: "{{ wp_home_path }}"
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+
+- name: Restore backed up site. Rsync {{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }} site to {{ wp_home_path }} 
+  synchronize:
+    src: "{{ backup_path }}wp{{ inventory_hostname }}/restore/{{ from_wordpress_site }}/"
+    dest: "{{ wp_home_path }}"
+    delete: yes
+  ignore_errors: true
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: search files for {{ wp_from_domain }} and replace with {{ wp_domain }}
+  shell:  find {{ wp_home_path }} -type f -print0 | xargs -0 sed -i 's/\b{{ wp_from_domain }}\b/{{ wp_domain }}/g'
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+  when: wp_from_domain != wp_domain
+
+- name: Copy the backed up {{ wordpress_site }} wp-config.php file to {{ wp_home_path }}
+  copy:
+    src: "{{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}/wp-config.php" 
+    dest: "{{ wp_home_path }}/wp-config.php" 
+    remote_src: yes

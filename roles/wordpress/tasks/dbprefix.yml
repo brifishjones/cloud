@@ -1,0 +1,35 @@
+---
+# tasks file for dbprefix
+- include: pre.yml
+
+- name: make sure that the backed up Wordpress Site has been defined with the extra-vars from_wordpress_site otherwise exit play
+  fail: msg="The backed up Wordpress site has not been defined with the flag extra-vars 'from_wordpress_site='."
+  when: from_wordpress_site is not defined
+  tags: always
+
+- name: make sure that the backup host with the {{ from_wordpress_site }} site has been defined with the extra-vars from_host otherwise assume that the backup host is the same as the current inventory hostname
+  set_fact:
+    from_host: "{{ inventory_hostname }}"
+  when: from_host is not defined
+  tags: always
+
+- name: the from_wordpress_site {{ from_wordpress_site }} must be defined in the /wordpress/vars directory
+  set_fact:
+    wp_from_home_path: "/var/www/{{ from_wordpress_site }}"
+    wp_from_domain: "{{ item.value.domain | default(ansible_host + '/' + from_wordpress_site) }}"
+    wp_from_title: "{{ item.value.title | default(from_wordpress_site) }}"
+    wp_from_db_name: "{{ from_wordpress_site }}"
+    wp_from_db_prefix: "{{ item.value.db_prefix | default(from_wordpress_site[:3]) }}_"
+    wp_from_admin_email: "{{ item.value.admin_email | default('info@example.com') }}"
+  loop: "{{ lookup('dict', wordpress_sites) }}"
+  when: from_wordpress_site == item.key
+  tags: always
+
+- name: search {{ wordpress_site }}.sql for {{ wp_from_db_prefix }} and replace with {{ wp_db_prefix }}
+  shell:  find {{ backup_path }}wp{{ inventory_hostname }}/restore -name {{ wordpress_site }}.sql -print0 | xargs -0 sed -i 's/\b{{ wp_from_db_prefix }}/sdx_/g'
+  become: true
+  become_method: sudo
+  become_user: www-data
+  ignore_errors: true
+#  when: wp_from_db_prefix != wp_db_prefix
+

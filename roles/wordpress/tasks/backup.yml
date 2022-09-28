@@ -1,51 +1,62 @@
 ---
 # tasks file for wordpress site backup
+# backup a wordpress site and database to /var/tmp on server then copy to localhost
 - include: pre.yml
 
-- name: Ensure wp{{ inventory_hostname }} directory exists for backup files
+- name: Ensure wp{{ inventory_hostname }}/backup directory exists for backup files
   file:
-    path: "{{ backup_path }}wp{{ inventory_hostname }}"
+    path: "{{ backup_path }}wp{{ inventory_hostname }}/backup"
     state: directory
     owner: www-data
     group: www-data
     recurse: yes
 
-- name: Export the WordPress database to wp{{ inventory_hostname }}/{{ wordpress_site }}.sql
-  command: wp db export {{ backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql --path={{ wp_home_path }}
+- name: Export the WordPress database to wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql
+  command: wp db export {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql --path={{ wp_home_path }}
   become: true
   become_method: sudo
   become_user: www-data
   ignore_errors: true
   tags: backup
 
-- name: Ensure {{ local_backup_path }}wp{{ inventory_hostname }} directory exists on local workstation to accept backup from remote
+- name: Rsync {{ wordpress_site }} site to {{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}
+  synchronize:
+    src: "{{ wp_home_path }}"
+    dest: "{{ backup_path }}wp{{ inventory_hostname }}/backup"
+    delete: yes
+  ignore_errors: true
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Ensure {{ local_backup_path }}wp{{ inventory_hostname }}/backup directory exists on local workstation to accept backup from remote
   local_action:
     module: file
-    path: "{{ local_backup_path }}wp{{ inventory_hostname }}" 
+    path: "{{ local_backup_path }}wp{{ inventory_hostname }}/backup" 
     state: directory
   become: false
 
-- name: Copy (rsync) database backup from remote server to local computer {{ local_backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql
+- name: Copy (rsync) database backup from remote server to local computer {{ local_backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql
   synchronize:
     mode: pull
-    src: "{{ backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql"
-    dest: "{{ local_backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql"
+    src: "{{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql"
+    dest: "{{ local_backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql"
   ignore_errors: true
   tags: backup_fetch_from_remote
 
-- name: Rsync archived site from remote server to local computer {{ local_backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}
+- name: Rsync archived site from remote server to local computer {{ local_backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}
   synchronize:
     mode: pull
-    src: "{{ wp_home_path }}"
-    dest: "{{ local_backup_path }}wp{{ inventory_hostname }}"
+    #src: "{{ wp_home_path }}"
+    src: "{{ backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}"
+    dest: "{{ local_backup_path }}wp{{ inventory_hostname }}/backup"
     delete: yes
   ignore_errors: true
   tags: backup_fetch_from_remote
 
-- name: Copy database backup from local computer to remote server {{backup_path}}wp{{ inventory_hostname }}.sql
+# TODO: Delete code below
+- name: Copy database backup from local computer to remote server {{backup_path}}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql
   copy:
-    src: "{{ local_backup_path }}wp{{ inventory_hostname }}/{{ wordpress_site }}.sql"
-    dest: "{{ backup_path }}"
+    src: "{{ local_backup_path }}wp{{ inventory_hostname }}/backup/{{ wordpress_site }}.sql"
+    dest: "{{ backup_path }}wp {{ inventory_hostname }}/backup/"
   ignore_errors: true
   tags: [backup_copy_to_remote, never]
   when: backup_from_host is defined
@@ -73,4 +84,3 @@
   become_user: www-data
   ignore_errors: true
   tags: [backup_restore, never]
-
