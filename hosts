@@ -1,5 +1,6 @@
 [production]
 fish
+dog
 
 [staging]
 
@@ -7,3 +8,4 @@ fish
 
 [vultr]
 fish ansible_host=137.220.57.211
+dog
